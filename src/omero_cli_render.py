@@ -139,6 +139,12 @@ TEST_HELP = """Test that underlying pixel data is available
     omero render test Image:1
 """
 
+TEST_THUMBS = """Generate thumbnails
+
+    Examples:
+    omero render thumbs Image:1
+"""
+
 # Current version for specifying rendering settings
 # in the yaml / json files
 SPEC_VERSION = 2
@@ -363,11 +369,12 @@ class RenderControl(BaseControl):
         set_cmd = parser.add(sub, self.set, SET_HELP)
         edit = parser.add(sub, self.edit, EDIT_HELP)
         test = parser.add(sub, self.test, TEST_HELP)
+        thumbs = parser.add(sub, self.thumbs, TEST_THUMBS)
 
         render_type = ProxyStringType("Image")
         src_help = ("Rendering settings source")
 
-        for x in (info, copy, test):
+        for x in (info, copy, test, thumbs):
             x.add_argument("object", type=render_type, help=src_help)
 
         tgt_help = ("Objects to apply the rendering settings to")
@@ -642,6 +649,19 @@ class RenderControl(BaseControl):
             rangelist.append([c.start, c.end])
             colourlist.append(c.color)
         return (namedict, cindices, rangelist, colourlist)
+
+
+    @gateway_required
+    def thumbs(self, args):
+        for img in self.render_images(self.gateway, args.object, batch=1):
+            try:
+                # img.saveDefaults()
+                self._generate_thumbs([img])
+            except Exception as e:
+                self.ctx.err('ERROR: %s' % e)
+            finally:
+                img._closeRE()
+
 
     @gateway_required
     def set(self, args):
